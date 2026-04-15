@@ -103,9 +103,6 @@ export default function App() {
       // ─── Stage: plan_ready → plan_proposed ──────────────────────────────
       if (data.stageTransition?.stage === 'plan_ready') {
         const plan = data.stageTransition.action_plan
-        if (currentSessionId) {
-          await updateSession(currentSessionId, { status: 'plan_proposed' })
-        }
         setActionPlan(plan)
         setStage(STAGES.PLAN_PROPOSED)
         setSessionHistory(prev =>

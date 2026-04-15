@@ -37,6 +37,9 @@ alter table sessions add column if not exists user_id uuid references user_accou
 alter table sessions add column if not exists updated_at timestamptz not null default now();
 alter table sessions add column if not exists team jsonb;
 alter table sessions add column if not exists action_plan jsonb;
+alter table sessions drop constraint if exists sessions_status_check;
+alter table sessions add constraint sessions_status_check
+  check (status in ('intake', 'team_proposed', 'team_approved', 'plan_proposed', 'completed'));
 
 alter table user_accounts add column if not exists session_budget numeric(10,2) not null default 2.00;
 alter table user_accounts add column if not exists monthly_usage integer not null default 0;
