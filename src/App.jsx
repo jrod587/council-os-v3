@@ -13,9 +13,10 @@ export const STAGES = {
 }
 
 const SESSION_BUDGET_USD = 2.00
-// Sonnet pricing (per 1K tokens): input $0.003, output $0.015
+// Gemini 2.0 Flash pricing (per 1K tokens): effectively $0 on free tier
+// Paid tier: input $0.000075, output $0.0003 — keeping tracker for when billing kicks in
 const costEstimate = (usage) =>
-  ((usage.input * 0.003 + usage.output * 0.015) / 1000)
+  ((usage.input * 0.000075 + usage.output * 0.0003) / 1000)
 
 export default function App() {
   const [messages,        setMessages]        = useState([])

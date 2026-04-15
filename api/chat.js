@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // ─── Atlas System Prompt v1 ───────────────────────────────────────────────────
 // Stage 1: Intake only. Sharpens the problem before team assembly.
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Parse body (Vercel auto-parses JSON, but handle both cases)
+  // Parse body
   let body
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
@@ -53,36 +53,48 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'messages array required' })
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' })
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' })
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  // ─── Convert message history for Gemini ──────────────────────────────────
+  // Anthropic uses 'user'/'assistant' — Gemini uses 'user'/'model'
+  // The last message is the current user turn; history is everything before it.
+  const history = messages.slice(0, -1).map(m => ({
+    role:  m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }))
+  const lastUserMessage = messages[messages.length - 1].content
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  const model  = genAI.getGenerativeModel({
+    model:             'gemini-2.0-flash',
+    systemInstruction: ATLAS_SYSTEM_PROMPT,
+  })
 
   try {
-    const response = await client.messages.create({
-      model:      'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system:     ATLAS_SYSTEM_PROMPT,
-      messages,
-    })
+    const chat   = model.startChat({ history })
+    const result = await chat.sendMessage(lastUserMessage)
+    const content = result.response.text()
 
-    const content = response.content[0]?.text ?? ''
+    // ─── Usage estimate (Gemini returns token counts differently) ─────────
+    const usageMeta = result.response.usageMetadata ?? {}
+    const usage = {
+      input_tokens:  usageMeta.promptTokenCount     ?? 0,
+      output_tokens: usageMeta.candidatesTokenCount ?? 0,
+    }
 
-    // Detect stage transition (JSON block from Atlas)
+    // ─── Detect stage transition ──────────────────────────────────────────
     let stageTransition = null
     const jsonMatch = content.match(/```json\s*(\{[\s\S]*?"stage"\s*:\s*"intake_complete"[\s\S]*?\})\s*```/)
     if (jsonMatch) {
       try { stageTransition = JSON.parse(jsonMatch[1]) } catch { /* malformed — ignore */ }
     }
 
-    return res.status(200).json({
-      content,
-      stageTransition,
-      usage: response.usage,
-    })
+    return res.status(200).json({ content, stageTransition, usage })
+
   } catch (err) {
     console.error('[Atlas API error]', err?.message)
-    return res.status(500).json({ error: 'Atlas unavailable. Check ANTHROPIC_API_KEY.' })
+    return res.status(500).json({ error: `Atlas unavailable: ${err?.message ?? 'unknown error'}` })
   }
 }
