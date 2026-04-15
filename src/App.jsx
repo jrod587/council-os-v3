@@ -29,6 +29,7 @@ export default function App() {
   const [tokenUsage,      setTokenUsage]      = useState({ input: 0, output: 0 })
   const [sessionHistory,  setSessionHistory]  = useState([])
   const [error,           setError]           = useState(null)
+  const [sessionSaved,    setSessionSaved]    = useState(false)
 
   const estimatedCostUSD = costEstimate(tokenUsage).toFixed(4)
   const budgetPercent    = Math.min((costEstimate(tokenUsage) / SESSION_BUDGET_USD) * 100, 100)
@@ -44,22 +45,22 @@ export default function App() {
     else setMessages(prev => [...prev, userMsg]) // still track in history
     setIsLoading(true)
 
-    // Create Supabase session on first message
-    let currentSessionId = sessionId
-    if (!currentSessionId) {
-      const session = await createSession(userText)
-      if (session) {
-        currentSessionId = session.id
-        setSessionId(currentSessionId)
-        setSessionHistory(prev => [{
-          id:      currentSessionId,
-          preview: userText.slice(0, 42) + (userText.length > 42 ? '…' : ''),
-          stage:   'intake',
-        }, ...prev])
-      }
-    }
-
     try {
+      // Create Supabase session on first message.
+      let currentSessionId = sessionId
+      if (!currentSessionId) {
+        const session = await createSession(userText)
+        if (session) {
+          currentSessionId = session.id
+          setSessionId(currentSessionId)
+          setSessionHistory(prev => [{
+            id:      currentSessionId,
+            preview: userText.slice(0, 42) + (userText.length > 42 ? '…' : ''),
+            stage:   'intake',
+          }, ...prev])
+        }
+      }
+
       const res = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,15 +86,15 @@ export default function App() {
       if (data.stageTransition?.stage === 'intake_complete') {
         const refined  = data.stageTransition.problem_refined
         const newTeam  = data.stageTransition.team ?? []
-        setProblemRefined(refined)
-        setTeam(newTeam)
-        setStage(STAGES.TEAM_PROPOSED)
         if (currentSessionId) {
           await updateSession(currentSessionId, {
             problem_refined: refined,
             status:          'team_proposed',
           })
         }
+        setProblemRefined(refined)
+        setTeam(newTeam)
+        setStage(STAGES.TEAM_PROPOSED)
         setSessionHistory(prev =>
           prev.map(s => s.id === currentSessionId ? { ...s, stage: 'team_proposed' } : s)
         )
@@ -102,11 +103,11 @@ export default function App() {
       // ─── Stage: plan_ready → plan_proposed ──────────────────────────────
       if (data.stageTransition?.stage === 'plan_ready') {
         const plan = data.stageTransition.action_plan
-        setActionPlan(plan)
-        setStage(STAGES.PLAN_PROPOSED)
         if (currentSessionId) {
           await updateSession(currentSessionId, { status: 'plan_proposed' })
         }
+        setActionPlan(plan)
+        setStage(STAGES.PLAN_PROPOSED)
         setSessionHistory(prev =>
           prev.map(s => s.id === currentSessionId ? { ...s, stage: 'plan_proposed' } : s)
         )
@@ -125,26 +126,41 @@ export default function App() {
 
   // ─── Gate 1: Approve Team ───────────────────────────────────────────────────
   const approveTeam = useCallback(async () => {
-    setStage(STAGES.TEAM_APPROVED)
-    if (sessionId) {
-      await updateSession(sessionId, { status: 'team_approved' })
+    if (!sessionId) {
+      setError('Session not initialized yet. Send the first message again to restore persistence.')
+      return
     }
-    setSessionHistory(prev =>
-      prev.map(s => s.id === sessionId ? { ...s, stage: 'team_approved' } : s)
-    )
-    // Trigger Atlas to generate the action plan
-    await sendMessage('[TEAM_APPROVED] The user has approved the council roster. Generate the structured action plan now based on the refined problem and the approved team composition.')
+
+    try {
+      await updateSession(sessionId, { status: 'team_approved' })
+      setStage(STAGES.TEAM_APPROVED)
+      setSessionHistory(prev =>
+        prev.map(s => s.id === sessionId ? { ...s, stage: 'team_approved' } : s)
+      )
+      await sendMessage('[TEAM_APPROVED] The user has approved the council roster. Generate the structured action plan now based on the refined problem and the approved team composition.')
+    } catch (err) {
+      setError(err.message)
+    }
   }, [sessionId, sendMessage])
 
   // ─── Gate 2: Approve Plan ───────────────────────────────────────────────────
   const approvePlan = useCallback(async () => {
-    setStage(STAGES.PLAN_APPROVED)
-    if (sessionId) {
-      await writeSessionSummary(sessionId, { team, actionPlan })
+    if (!sessionId) {
+      setError('No persisted session found. Approval is blocked until Supabase is available.')
+      return
     }
-    setSessionHistory(prev =>
-      prev.map(s => s.id === sessionId ? { ...s, stage: 'plan_approved' } : s)
-    )
+
+    try {
+      await writeSessionSummary(sessionId, { team, actionPlan })
+      setStage(STAGES.PLAN_APPROVED)
+      setSessionSaved(true)
+      setSessionHistory(prev =>
+        prev.map(s => s.id === sessionId ? { ...s, stage: 'plan_approved' } : s)
+      )
+    } catch (err) {
+      setError(err.message)
+      setSessionSaved(false)
+    }
   }, [sessionId, team, actionPlan])
 
   // ─── New session ────────────────────────────────────────────────────────────
@@ -157,6 +173,7 @@ export default function App() {
     setActionPlan(null)
     setTokenUsage({ input: 0, output: 0 })
     setError(null)
+    setSessionSaved(false)
   }, [])
 
   return (
@@ -185,6 +202,7 @@ export default function App() {
         actionPlan={actionPlan}
         budgetPercent={budgetPercent}
         estimatedCostUSD={estimatedCostUSD}
+        sessionSaved={sessionSaved}
         onApproveTeam={approveTeam}
         onApprovePlan={approvePlan}
         isLoading={isLoading}

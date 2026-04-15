@@ -48,7 +48,7 @@ export default function LeftPanel({ sessions, onNewSession, currentSessionId }) 
 
       {/* Footer */}
       <div className="h-11 border-t border-border-subtle flex items-center px-4">
-        <span className="text-text-dim text-[10px] font-mono">Phase 2 build · α</span>
+        <span className="text-text-dim text-[10px] font-mono">Phase 3 hardening · α</span>
       </div>
     </div>
   )

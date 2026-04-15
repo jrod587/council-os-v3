@@ -18,7 +18,10 @@ export async function createSession(problemRaw = '') {
     .insert({ problem_raw: problemRaw, status: 'intake' })
     .select()
     .single()
-  if (error) { console.error('[createSession]', error); return null }
+  if (error) {
+    console.error('[createSession]', error)
+    throw new Error(`Session start failed: ${error.message}`)
+  }
   return data
 }
 
@@ -30,7 +33,10 @@ export async function updateSession(id, updates) {
     .eq('id', id)
     .select()
     .single()
-  if (error) { console.error('[updateSession]', error); return null }
+  if (error) {
+    console.error('[updateSession]', error)
+    throw new Error(`Session update failed: ${error.message}`)
+  }
   return data
 }
 
@@ -51,6 +57,9 @@ export async function writeSessionSummary(id, { team, actionPlan }) {
     .eq('id', id)
     .select()
     .single()
-  if (error) { console.error('[writeSessionSummary]', error); return null }
+  if (error) {
+    console.error('[writeSessionSummary]', error)
+    throw new Error(`Session save failed: ${error.message}`)
+  }
   return data
 }

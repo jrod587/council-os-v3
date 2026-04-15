@@ -235,6 +235,7 @@ export default function RightPanel({
   actionPlan,
   budgetPercent,
   estimatedCostUSD,
+  sessionSaved,
   onApproveTeam,
   onApprovePlan,
   isLoading,
@@ -310,6 +311,19 @@ export default function RightPanel({
           )}
           {isPlanApproved && <PlanApprovedState />}
         </GateBlock>
+
+        {isPlanApproved && (
+          <div className="rounded-xl bg-forest-panel border border-emerald/20 p-4">
+            <p className="text-[10px] text-emerald font-medium uppercase tracking-widest mb-2">
+              Persistence
+            </p>
+            <p className="text-text-secondary text-xs leading-relaxed">
+              {sessionSaved
+                ? 'Supabase session record saved with the approved team and action plan.'
+                : 'Session marked complete in the UI, but persistence was not confirmed.'}
+            </p>
+          </div>
+        )}
 
         {/* Gate 3 — Final Audit (v2) */}
         <div className="gate-locked rounded-xl p-4">
