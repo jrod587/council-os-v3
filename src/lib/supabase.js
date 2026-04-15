@@ -33,3 +33,24 @@ export async function updateSession(id, updates) {
   if (error) { console.error('[updateSession]', error); return null }
   return data
 }
+
+/**
+ * Gate 2 approval: write the completed session summary to Supabase.
+ * Stores team roster (JSONB) + action plan (JSONB) + marks session completed.
+ */
+export async function writeSessionSummary(id, { team, actionPlan }) {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('sessions')
+    .update({
+      team:        team        ?? null,
+      action_plan: actionPlan  ?? null,
+      status:      'completed',
+      updated_at:  new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) { console.error('[writeSessionSummary]', error); return null }
+  return data
+}

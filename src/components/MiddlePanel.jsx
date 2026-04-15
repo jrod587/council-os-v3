@@ -3,9 +3,9 @@ import { useState, useRef, useEffect } from 'react'
 const STAGE_LABELS = {
   intake:        'Stage 1 — Intake',
   team_proposed: 'Gate 1 — Approve Team',
-  team_approved: 'Stage 3 — Council Session',
-  planning:      'Stage 3 — Planning',
-  plan_approved: 'Gate 2 — Approve Plan',
+  team_approved: 'Gate 2 — Generating Plan',
+  plan_proposed: 'Gate 2 — Approve Plan',
+  plan_approved: 'Session Complete',
 }
 
 export default function MiddlePanel({ messages, isLoading, stage, onSendMessage, error }) {
@@ -120,12 +120,13 @@ function EmptyState() {
 function Message({ message }) {
   const isUser = message.role === 'user'
 
-  // Strip JSON stage-transition blocks from display
+  // Strip JSON stage-transition blocks and internal signals from display
   const displayContent = isUser
     ? message.content
+        .replace(/\[TEAM_APPROVED\][\s\S]*/g, '')  // strip internal trigger
+        .trim()
     : message.content
-        .replace(/```json[\s\S]*?```/g, '')
-        .replace(/\{[\s\S]*?"stage"\s*:\s*"intake_complete"[\s\S]*?\}/g, '')
+        .replace(/```json[\s\S]*?```/g, '')  // strip all JSON code blocks
         .trim()
 
   if (!displayContent) return null
