@@ -262,8 +262,8 @@ begin
 
   select *
   into v_code
-  from public.founder_codes
-  where lower(code) = lower(trim(p_code))
+  from public.founder_codes fc
+  where lower(fc.code) = lower(trim(p_code))
   for update;
 
   if not found then
@@ -304,14 +304,14 @@ begin
   returning * into v_redemption;
 
   update public.founder_codes
-  set times_redeemed = times_redeemed + 1
+  set times_redeemed = public.founder_codes.times_redeemed + 1
   where id = v_code.id;
 
   update public.user_accounts
-  set founder_credits_remaining = founder_credits_remaining + v_code.credits_granted
+  set founder_credits_remaining = public.user_accounts.founder_credits_remaining + v_code.credits_granted
   where id = v_account.id
-  returning founder_credits_remaining, purchased_credits_remaining
-  into founder_credits_remaining, purchased_credits_remaining;
+  returning public.user_accounts.founder_credits_remaining, public.user_accounts.purchased_credits_remaining
+  into redeem_founder_code.founder_credits_remaining, redeem_founder_code.purchased_credits_remaining;
 
   insert into public.credit_ledger (
     user_account_id,
@@ -330,9 +330,9 @@ begin
     jsonb_build_object('code', v_code.code)
   );
 
-  redemption_id := v_redemption.id;
-  code := v_code.code;
-  credits_granted := v_code.credits_granted;
+  redeem_founder_code.redemption_id := v_redemption.id;
+  redeem_founder_code.code := v_code.code;
+  redeem_founder_code.credits_granted := v_code.credits_granted;
   return next;
 end;
 $$;
