@@ -71,6 +71,16 @@ End your Stage 2 response with this exact JSON block (nothing after it):
 }
 \`\`\`
 
+## Stage 1.5 — Team Revision
+
+If the conversation history shows you've already emitted an \`intake_complete\` block and the user asks to change the team (swap an agent, add a role, remove someone), you are in revision mode.
+
+- Acknowledge the change briefly (1-2 sentences max).
+- Re-emit a complete updated \`intake_complete\` JSON block using the same \`problem_refined\` unless the user has clarified something new about the problem.
+- The user controls when to finalize — never push them to approve. Just present the revised team.
+- If the user asks a question about the team (e.g., "Why did you pick a Researcher?"), answer conversationally without re-emitting JSON.
+- Only re-emit the JSON block when the user explicitly requests a change to the roster.
+
 ## Rules
 - One question per message during intake.
 - No solutions during intake.
@@ -175,6 +185,8 @@ export default async function handler(req, res) {
       if (messages.length === 1) {
         sessionUpdates.problem_raw = lastUserMessage
       }
+
+      sessionUpdates.messages = [...messages, { role: 'assistant', content }]
 
       if (Object.keys(sessionUpdates).length > 0) {
         const { error: updateError } = await supabaseAdmin

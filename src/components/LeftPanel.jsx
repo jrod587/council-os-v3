@@ -1,6 +1,7 @@
 export default function LeftPanel({
   sessions,
   onNewSession,
+  onSelectSession,
   currentSessionId,
   userEmail,
   onSignOut,
@@ -66,10 +67,11 @@ export default function LeftPanel({
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className={`px-3 py-2.5 rounded-lg text-xs transition-colors ${
+                onClick={() => onSelectSession && onSelectSession(session.id)}
+                className={`px-3 py-2.5 rounded-lg text-xs transition-colors cursor-pointer hover:bg-forest-panel/50 ${
                   session.id === currentSessionId
                     ? 'bg-forest-panel text-text-primary border border-border-subtle'
-                    : 'text-text-secondary'
+                    : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 <p className="truncate font-medium">{session.preview || 'New session'}</p>

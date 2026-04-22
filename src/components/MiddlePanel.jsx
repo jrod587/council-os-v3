@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
 const STAGE_LABELS = {
-  intake: 'Stage 1 - Intake',
-  team_proposed: 'Gate 1 - Approve Team',
-  team_approved: 'Gate 2 - Generating Plan',
-  plan_proposed: 'Gate 2 - Approve Plan',
+  intake: 'Stage 1 — Intake',
+  team_proposed: 'Gate 1 — Refine & Approve Team',
+  team_approved: 'Gate 2 — Generating Plan',
+  plan_proposed: 'Gate 2 — Approve Plan',
   plan_approved: 'Session Complete',
 }
 
@@ -12,6 +12,7 @@ export default function MiddlePanel({
   messages,
   isLoading,
   stage,
+  team,
   onSendMessage,
   error,
   authReady,
@@ -100,6 +101,9 @@ export default function MiddlePanel({
             {messages.map((message, index) => (
               <Message key={index} message={message} />
             ))}
+            {stage === 'team_proposed' && team && team.length > 0 && (
+              <TeamProposedBanner team={team} />
+            )}
             {isLoading && <TypingIndicator />}
           </>
         )}
@@ -125,7 +129,9 @@ export default function MiddlePanel({
                 ? 'Sign in with a magic link to unlock chat'
                 : !sessionReady
                   ? 'Start a credited session before Atlas runs'
-                  : 'Describe your problem...'
+                  : stage === 'team_proposed'
+                    ? 'Ask Atlas about the team, or approve it in the panel when ready...'
+                    : 'Describe your problem...'
             }
             rows={1}
             disabled={isBlocked}
@@ -289,6 +295,33 @@ function EmptyState() {
       <h2 className="text-text-primary text-lg font-semibold mb-2">Bring your problem.</h2>
       <p className="text-text-secondary text-sm leading-relaxed max-w-xs">
         Atlas will sharpen it, assemble the right team, and stop at each approval gate before moving forward.
+      </p>
+    </div>
+  )
+}
+
+function TeamProposedBanner({ team }) {
+  return (
+    <div className="rounded-xl border border-emerald/20 bg-emerald/5 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-emerald flex-shrink-0" />
+        <p className="text-[10px] uppercase tracking-widest text-emerald font-medium">Council Assembled</p>
+      </div>
+      <div className="space-y-2">
+        {team.map((agent, index) => (
+          <div key={index} className="flex items-start gap-2.5">
+            <span className="flex-shrink-0 w-6 h-6 rounded bg-emerald/10 border border-emerald/20 flex items-center justify-center text-[9px] font-bold font-mono text-emerald">
+              {agent.role?.charAt(0) ?? '?'}
+            </span>
+            <div className="min-w-0">
+              <p className="text-text-primary text-xs font-semibold leading-tight">{agent.role}</p>
+              <p className="text-text-dim text-[10px] leading-snug truncate">{agent.domain}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-text-dim text-[10px] leading-relaxed">
+        Ask Atlas to adjust the roster, or hit <span className="text-text-secondary font-medium">Approve Council</span> in the panel when ready.
       </p>
     </div>
   )

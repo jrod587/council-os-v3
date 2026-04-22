@@ -160,6 +160,20 @@ export default function App() {
     }
   }, [])
 
+  const loadPastSession = useCallback(async (pastSessionId) => {
+    setError(null)
+    setIsLoading(true)
+    try {
+      const payload = await apiFetch(`/api/session?id=${pastSessionId}`, { method: 'GET' })
+      hydrateSession(payload.session)
+      setMessages(payload.session.messages ?? [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [hydrateSession])
+
   const startSession = useCallback(async () => {
     setError(null)
     setCheckoutState(null)
@@ -347,6 +361,7 @@ export default function App() {
       <LeftPanel
         sessions={sessionHistory}
         onNewSession={resetSessionState}
+        onSelectSession={loadPastSession}
         currentSessionId={sessionId}
         userEmail={authSession?.user?.email ?? null}
         onSignOut={handleSignOut}
@@ -359,6 +374,7 @@ export default function App() {
         messages={messages}
         isLoading={isLoading}
         stage={stage}
+        team={team}
         onSendMessage={sendMessage}
         error={error}
         authReady={authReady}

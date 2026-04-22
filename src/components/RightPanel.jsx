@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const TOOL_ICONS = {
   analysis: 'AN',
   research: 'RS',
@@ -15,8 +17,8 @@ function HexTile({ agent, index }) {
   const delay = index * 120
   return (
     <div className="hex-tile group flex flex-col items-center text-center cursor-default" style={{ animationDelay: `${delay}ms` }}>
-      <div className="relative mb-2">
-        <svg width="72" height="78" viewBox="0 0 72 78" fill="none" className="drop-shadow-lg">
+      <div className="relative mb-1.5">
+        <svg width="52" height="58" viewBox="0 0 72 78" fill="none" className="drop-shadow-lg">
           <polygon
             points="36,2 68,19 68,59 36,76 4,59 4,19"
             fill="rgb(var(--color-emerald) / 0.06)"
@@ -27,16 +29,16 @@ function HexTile({ agent, index }) {
           <polygon points="36,14 56,25 56,53 36,64 16,53 16,25" fill="rgb(var(--color-emerald) / 0.04)" />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-emerald text-xl font-bold font-mono leading-none">{agent.role?.charAt(0) || '?'}</span>
+          <span className="text-emerald text-base font-bold font-mono leading-none">{agent.role?.charAt(0) || '?'}</span>
         </div>
       </div>
 
-      <p className="text-text-primary text-[11px] font-semibold leading-tight mb-0.5">{agent.role}</p>
-      <p className="text-text-dim text-[9px] leading-snug max-w-[72px] mb-1.5">{agent.domain}</p>
+      <p className="text-text-primary text-[10px] font-semibold leading-tight mb-0.5">{agent.role}</p>
+      <p className="text-text-dim text-[8px] leading-snug max-w-[56px] mb-1">{agent.domain}</p>
       <div className="flex flex-wrap justify-center gap-0.5">
-        {(agent.tools ?? []).slice(0, 3).map((tool) => (
-          <span key={tool} title={tool} className="text-[8px] bg-forest-mid text-text-dim px-1 py-0.5 rounded font-mono">
-            {TOOL_ICONS[tool] ?? 'TL'} {tool}
+        {(agent.tools ?? []).slice(0, 2).map((tool) => (
+          <span key={tool} title={tool} className="text-[7px] bg-forest-mid text-text-dim px-1 py-0.5 rounded font-mono">
+            {TOOL_ICONS[tool] ?? 'TL'}
           </span>
         ))}
       </div>
@@ -49,7 +51,7 @@ function Gate1Interstitial({ team, onApproveTeam, isLoading }) {
     <div className="space-y-4">
       <p className="text-text-dim text-[10px] uppercase tracking-widest font-medium">Council Assembled</p>
       {team.length > 0 ? (
-        <div className="flex flex-wrap gap-3 justify-center py-2">
+        <div className="flex flex-wrap gap-2 justify-center py-1">
           {team.map((agent, index) => (
             <HexTile key={`${agent.role}-${index}`} agent={agent} index={index} />
           ))}
@@ -83,7 +85,7 @@ function Gate2Loading() {
   )
 }
 
-function ActionPlanDisplay({ plan, onApprovePlan }) {
+function ActionPlanDisplay({ plan, onApprovePlan, isApproved = false }) {
   if (!plan) return null
 
   return (
@@ -134,12 +136,94 @@ function ActionPlanDisplay({ plan, onApprovePlan }) {
         </div>
       )}
 
-      <button
-        onClick={onApprovePlan}
-        className="w-full py-2.5 px-4 rounded-xl bg-emerald/15 hover:bg-emerald/25 border border-emerald/30 hover:border-emerald/50 text-emerald text-sm font-medium transition-all duration-200"
-      >
-        Approve Plan
-      </button>
+      {!isApproved && (
+        <button
+          onClick={onApprovePlan}
+          className="w-full py-2.5 px-4 rounded-xl bg-emerald/15 hover:bg-emerald/25 border border-emerald/30 hover:border-emerald/50 text-emerald text-sm font-medium transition-all duration-200"
+        >
+          Approve Plan
+        </button>
+      )}
+    </div>
+  )
+}
+
+function ExportControls({ plan, problemRefined }) {
+  const [copied, setCopied] = useState(false)
+
+  const buildMarkdown = () => {
+    const lines = []
+    lines.push('# Council OS — Action Plan')
+    lines.push('')
+    if (problemRefined) {
+      lines.push(`**Problem:** ${problemRefined}`)
+      lines.push('')
+    }
+    if (plan.summary) {
+      lines.push('## Executive Summary')
+      lines.push(plan.summary)
+      lines.push('')
+    }
+    if (plan.tasks?.length > 0) {
+      lines.push('## Action Plan')
+      lines.push('')
+      plan.tasks.forEach((task) => {
+        lines.push(`### ${task.id}. ${task.title}`)
+        lines.push(`**Owner:** ${task.owner} · **Timeline:** ${task.timeline}`)
+        lines.push('')
+        lines.push(task.description)
+        lines.push('')
+      })
+    }
+    if (plan.tech_stack?.length > 0) {
+      lines.push('## Tech Stack')
+      lines.push(plan.tech_stack.join(', '))
+      lines.push('')
+    }
+    const meta = []
+    if (plan.cost_estimate) meta.push(`**Cost Estimate:** ${plan.cost_estimate}`)
+    if (plan.timeline_total) meta.push(`**Total Timeline:** ${plan.timeline_total}`)
+    if (meta.length > 0) lines.push(meta.join('  \n'))
+    return lines.join('\n')
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildMarkdown())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* noop */ }
+  }
+
+  const handleDownload = () => {
+    const blob = new Blob([buildMarkdown()], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'council-os-action-plan.md'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[9px] text-text-dim uppercase tracking-widest font-medium">Export Deliverable</p>
+      <div className="flex gap-2">
+        <button
+          onClick={handleCopy}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-border-subtle bg-forest-mid hover:border-emerald/30 hover:text-emerald text-text-secondary text-xs font-medium transition-all duration-200"
+        >
+          <ClipboardIcon />
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+        <button
+          onClick={handleDownload}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-border-subtle bg-forest-mid hover:border-emerald/30 hover:text-emerald text-text-secondary text-xs font-medium transition-all duration-200"
+        >
+          <DownloadIcon />
+          Download .md
+        </button>
+      </div>
     </div>
   )
 }
@@ -169,22 +253,25 @@ function GateBlock({ number, label, active, locked, lockedHint, complete, childr
   )
 }
 
-function PlanApprovedState({ sessionSaved }) {
+function PlanApprovedState({ sessionSaved, plan, problemRefined }) {
   return (
-    <div className="py-4 text-center space-y-3">
-      <div className="w-10 h-10 rounded-full bg-emerald/15 border border-emerald/30 flex items-center justify-center mx-auto">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <path d="M3 9L7 13L15 5" stroke="rgb(var(--color-emerald))" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-      <div>
-        <p className="text-text-primary text-sm font-semibold mb-1">Session Complete</p>
-        <p className="text-text-dim text-[11px] leading-relaxed">
-          {sessionSaved
-            ? 'Server-side session record saved. This run is tied to the authenticated owner.'
-            : 'The plan was approved in the UI, but persistence was not confirmed.'}
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="w-5 h-5 rounded-full bg-emerald/15 border border-emerald/30 flex items-center justify-center flex-shrink-0">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M1.5 5L3.5 7L8.5 2" stroke="rgb(var(--color-emerald))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <p className="text-emerald text-xs font-medium">
+          {sessionSaved ? 'Session saved' : 'Plan approved'}
         </p>
       </div>
+      {plan && (
+        <>
+          <ActionPlanDisplay plan={plan} isApproved />
+          <ExportControls plan={plan} problemRefined={problemRefined} />
+        </>
+      )}
     </div>
   )
 }
@@ -280,7 +367,7 @@ export default function RightPanel({
         >
           {isTeamApproved && !actionPlan && <Gate2Loading />}
           {isPlanProposed && actionPlan && <ActionPlanDisplay plan={actionPlan} onApprovePlan={onApprovePlan} />}
-          {isPlanApproved && <PlanApprovedState sessionSaved={sessionSaved} />}
+          {isPlanApproved && <PlanApprovedState sessionSaved={sessionSaved} plan={actionPlan} problemRefined={problemRefined} />}
         </GateBlock>
 
         <div className="gate-locked rounded-xl p-4">
@@ -308,5 +395,23 @@ export default function RightPanel({
         <p className="text-text-dim text-[10px] mt-1.5">Hard cap $2.00/session · payment required before Atlas runs</p>
       </div>
     </div>
+  )
+}
+
+function ClipboardIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <rect x="4" y="1" width="7" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M2 3H1.5A.5.5 0 0 0 1 3.5v7a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5V10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M6 1v7M3.5 5.5L6 8l2.5-2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M1 10h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
   )
 }

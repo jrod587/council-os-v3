@@ -127,6 +127,7 @@ create table if not exists public.sessions (
   status text not null default 'intake',
   team jsonb,
   action_plan jsonb,
+  messages jsonb not null default '[]'::jsonb,
   last_error text,
   constraint sessions_status_check
     check (status in ('intake', 'team_proposed', 'team_approved', 'plan_proposed', 'completed', 'bootstrap_failed', 'cancelled')),
@@ -146,7 +147,8 @@ alter table public.sessions
   add column if not exists last_error text,
   add column if not exists updated_at timestamptz not null default now(),
   add column if not exists team jsonb,
-  add column if not exists action_plan jsonb;
+  add column if not exists action_plan jsonb,
+  add column if not exists messages jsonb not null default '[]'::jsonb;
 
 update public.sessions
 set user_account_id = user_id
