@@ -135,17 +135,16 @@ export async function getOwnedSession(sessionId, userAccountId) {
 }
 
 export async function readRawBody(req) {
-  if (Buffer.isBuffer(req.body)) return req.body
-  if (typeof req.body === 'string') return Buffer.from(req.body)
-  if (req.body && typeof req.body === 'object' && !req.readableEnded) {
-    return Buffer.from(JSON.stringify(req.body))
-  }
-
-  const chunks = []
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-  }
-  return Buffer.concat(chunks)
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    req.on('data', (chunk) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    })
+    req.on('end', () => {
+      resolve(Buffer.concat(chunks))
+    })
+    req.on('error', reject)
+  })
 }
 
 export function getSessionPriceUsd() {
