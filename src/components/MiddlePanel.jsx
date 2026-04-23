@@ -325,11 +325,11 @@ function Gate1ApprovalBanner({ team, rationale, onApprove, isLoading }) {
         {team.map((agent, index) => (
           <div key={index} className="flex items-start gap-3 bg-forest-night p-3 rounded-lg border border-border-subtle">
             <span className="flex-shrink-0 w-8 h-8 rounded bg-emerald/10 border border-emerald/20 flex items-center justify-center text-xs font-bold font-mono text-emerald">
-              {agent.role?.charAt(0) ?? '?'}
+              {agent?.role?.charAt(0) ?? '?'}
             </span>
             <div className="min-w-0">
-              <p className="text-text-primary text-sm font-semibold leading-tight mb-0.5">{agent.role}</p>
-              <p className="text-text-dim text-[11px] leading-snug line-clamp-2">{agent.domain}</p>
+              <p className="text-text-primary text-sm font-semibold leading-tight mb-0.5">{agent?.role ?? 'Agent'}</p>
+              <p className="text-text-dim text-[11px] leading-snug line-clamp-2">{agent?.domain ?? 'Unknown domain'}</p>
             </div>
           </div>
         ))}
@@ -427,20 +427,20 @@ function FinalPlanDisplay({ plan }) {
       <div className="space-y-4">
         <h3 className="text-sm uppercase tracking-widest text-text-dim font-medium">Task Breakdown</h3>
         <div className="grid grid-cols-1 gap-3">
-          {(plan.tasks ?? []).map((task) => (
-            <div key={task.id} className="bg-forest-mid/30 p-4 rounded-xl border border-border-subtle hover:border-emerald/30 transition-colors">
+          {(plan.tasks ?? []).map((task, index) => (
+            <div key={task?.id ?? index} className="bg-forest-mid/30 p-4 rounded-xl border border-border-subtle hover:border-emerald/30 transition-colors">
               <div className="flex items-start justify-between gap-4 mb-2">
-                <h4 className="text-text-primary font-medium">{task.id}. {task.title}</h4>
+                <h4 className="text-text-primary font-medium">{task?.id ?? index + 1}. {task?.title ?? 'Task'}</h4>
                 <span className="flex-shrink-0 text-[10px] bg-forest-night border border-border-subtle px-2 py-1 rounded text-text-dim whitespace-nowrap">
-                  {task.timeline}
+                  {task?.timeline ?? 'Unknown timeline'}
                 </span>
               </div>
-              <p className="text-sm text-text-secondary leading-relaxed mb-3">{task.description}</p>
+              <p className="text-sm text-text-secondary leading-relaxed mb-3">{task?.description ?? ''}</p>
               <div className="flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded bg-emerald/10 border border-emerald/20 flex items-center justify-center text-[9px] font-bold font-mono text-emerald">
-                  {task.owner?.charAt(0) ?? '?'}
+                  {task?.owner?.charAt(0) ?? '?'}
                 </span>
-                <span className="text-xs text-emerald font-medium">{task.owner}</span>
+                <span className="text-xs text-emerald font-medium">{task?.owner ?? 'Unknown owner'}</span>
               </div>
             </div>
           ))}
@@ -451,6 +451,8 @@ function FinalPlanDisplay({ plan }) {
 }
 
 function Message({ message }) {
+  if (!message || typeof message.content !== 'string') return null
+
   const isUser = message.role === 'user'
 
   const displayContent = isUser
