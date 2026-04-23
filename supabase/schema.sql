@@ -126,6 +126,7 @@ create table if not exists public.sessions (
   problem_refined text,
   status text not null default 'intake',
   team jsonb,
+  team_rationale text,
   action_plan jsonb,
   messages jsonb not null default '[]'::jsonb,
   last_error text,
@@ -147,6 +148,7 @@ alter table public.sessions
   add column if not exists last_error text,
   add column if not exists updated_at timestamptz not null default now(),
   add column if not exists team jsonb,
+  add column if not exists team_rationale text,
   add column if not exists action_plan jsonb,
   add column if not exists messages jsonb not null default '[]'::jsonb;
 

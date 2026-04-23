@@ -50,6 +50,7 @@ export default function App() {
   const [sessionId, setSessionId] = useState(null)
   const [problemRefined, setProblemRefined] = useState('')
   const [team, setTeam] = useState([])
+  const [teamRationale, setTeamRationale] = useState(null)
   const [actionPlan, setActionPlan] = useState(null)
   const [tokenUsage, setTokenUsage] = useState({ input: 0, output: 0 })
   const [sessionSaved, setSessionSaved] = useState(false)
@@ -73,7 +74,19 @@ export default function App() {
     setSessionId(session.id)
     setStage(mapSessionStatusToStage(session.status))
     setProblemRefined(session.problem_refined ?? '')
-    setTeam(Array.isArray(session.team) ? session.team : [])
+
+    // Handle both legacy arrays and new object format for team
+    if (Array.isArray(session.team)) {
+      setTeam(session.team)
+      setTeamRationale(null)
+    } else if (session.team && typeof session.team === 'object') {
+      setTeam(session.team.members ?? [])
+      setTeamRationale(session.team.rationale ?? null)
+    } else {
+      setTeam([])
+      setTeamRationale(null)
+    }
+
     setActionPlan(session.action_plan ?? null)
     setSessionSaved(session.status === 'completed')
   }, [])
@@ -84,6 +97,7 @@ export default function App() {
     setSessionId(null)
     setProblemRefined('')
     setTeam([])
+    setTeamRationale(null)
     setActionPlan(null)
     setTokenUsage({ input: 0, output: 0 })
     setSessionSaved(false)
@@ -234,6 +248,7 @@ export default function App() {
       if (data.stageTransition?.stage === 'intake_complete') {
         setProblemRefined(data.stageTransition.problem_refined ?? '')
         setTeam(data.stageTransition.team ?? [])
+        setTeamRationale(data.stageTransition.team_rationale ?? null)
         setStage(STAGES.TEAM_PROPOSED)
       }
 
@@ -375,6 +390,10 @@ export default function App() {
         isLoading={isLoading}
         stage={stage}
         team={team}
+        teamRationale={teamRationale}
+        actionPlan={actionPlan}
+        onApproveTeam={approveTeam}
+        onApprovePlan={approvePlan}
         onSendMessage={sendMessage}
         error={error}
         authReady={authReady}

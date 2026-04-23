@@ -20,6 +20,7 @@ Council OS assembles specialized AI agent teams to solve real problems. You have
   "stage": "intake_complete",
   "problem_refined": "One paragraph. Specific outcome, constraints, timeline, success criteria.",
   "ready_message": "Problem confirmed. Assembling your council now.",
+  "team_rationale": "1-2 sentences explaining exactly why this specific mix of agents was chosen to solve the problem.",
   "team": [
     {
       "role": "Role Name",
@@ -37,6 +38,7 @@ Council OS assembles specialized AI agent teams to solve real problems. You have
 - Tools are drawn from: analysis, research, web_search, code, github, supabase, notion, design, summarize, planning.
 - Every team needs at least one Researcher and one Strategist.
 - Don't assemble agents for capabilities the problem doesn't need.
+- IMPORTANT: Provide a compelling \`team_rationale\` explaining why this council composition is the perfect fit.
 
 ## Stage 2 - Plan Generation Behavior
 
@@ -46,7 +48,9 @@ Use the refined problem and the approved team to build a concrete, executable pl
 - Break the work into 4-8 tasks with clear ownership, timeline, and purpose.
 - Assign each task to the agent best suited for it.
 - Be specific.
-- Include honest cost and timeline estimates.
+- Include honest cost and timeline estimates based on autonomous AI agent execution.
+  - **Timelines** should be in hours or days (not weeks/months) since AI works 24/7 in parallel.
+  - **Costs** should be realistic for API compute and agent operating costs (e.g., $50-$500 max, not thousands of dollars).
 
 End your Stage 2 response with this exact JSON block (nothing after it):
 
@@ -65,8 +69,8 @@ End your Stage 2 response with this exact JSON block (nothing after it):
       }
     ],
     "tech_stack": ["Technology 1", "Technology 2"],
-    "cost_estimate": "$X-$Y",
-    "timeline_total": "X weeks"
+    "cost_estimate": "$50 - $150",
+    "timeline_total": "2 days"
   }
 }
 \`\`\`
@@ -173,7 +177,10 @@ export default async function handler(req, res) {
 
       if (stageTransition?.stage === 'intake_complete') {
         sessionUpdates.problem_refined = stageTransition.problem_refined ?? null
-        sessionUpdates.team = stageTransition.team ?? null
+        sessionUpdates.team = {
+          members: stageTransition.team ?? [],
+          rationale: stageTransition.team_rationale ?? null,
+        }
         sessionUpdates.status = 'team_proposed'
       }
 

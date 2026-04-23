@@ -102,7 +102,13 @@ export default function MiddlePanel({
               <Message key={index} message={message} />
             ))}
             {stage === 'team_proposed' && team && team.length > 0 && (
-              <TeamProposedBanner team={team} />
+              <Gate1ApprovalBanner team={team} rationale={teamRationale} onApprove={onApproveTeam} isLoading={isLoading} />
+            )}
+            {stage === 'plan_proposed' && actionPlan && (
+              <Gate2ApprovalBanner plan={actionPlan} onApprove={onApprovePlan} isLoading={isLoading} />
+            )}
+            {stage === 'plan_approved' && actionPlan && (
+              <FinalPlanDisplay plan={actionPlan} />
             )}
             {isLoading && <TypingIndicator />}
           </>
@@ -300,29 +306,146 @@ function EmptyState() {
   )
 }
 
-function TeamProposedBanner({ team }) {
+function Gate1ApprovalBanner({ team, rationale, onApprove, isLoading }) {
   return (
-    <div className="rounded-xl border border-emerald/20 bg-emerald/5 p-4 space-y-3">
+    <div className="rounded-xl border border-emerald/20 bg-emerald/5 p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald flex-shrink-0" />
-        <p className="text-[10px] uppercase tracking-widest text-emerald font-medium">Council Assembled</p>
+        <div className="w-2 h-2 rounded-full bg-emerald flex-shrink-0" />
+        <p className="text-xs uppercase tracking-widest text-emerald font-semibold">Council Assembled</p>
       </div>
-      <div className="space-y-2">
+
+      {rationale && (
+        <div className="text-sm leading-relaxed text-text-secondary bg-forest-mid/50 p-3 rounded-lg border border-border-subtle">
+          <span className="text-emerald font-medium block mb-1">Atlas's Rationale:</span>
+          {rationale}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {team.map((agent, index) => (
-          <div key={index} className="flex items-start gap-2.5">
-            <span className="flex-shrink-0 w-6 h-6 rounded bg-emerald/10 border border-emerald/20 flex items-center justify-center text-[9px] font-bold font-mono text-emerald">
+          <div key={index} className="flex items-start gap-3 bg-forest-night p-3 rounded-lg border border-border-subtle">
+            <span className="flex-shrink-0 w-8 h-8 rounded bg-emerald/10 border border-emerald/20 flex items-center justify-center text-xs font-bold font-mono text-emerald">
               {agent.role?.charAt(0) ?? '?'}
             </span>
             <div className="min-w-0">
-              <p className="text-text-primary text-xs font-semibold leading-tight">{agent.role}</p>
-              <p className="text-text-dim text-[10px] leading-snug truncate">{agent.domain}</p>
+              <p className="text-text-primary text-sm font-semibold leading-tight mb-0.5">{agent.role}</p>
+              <p className="text-text-dim text-[11px] leading-snug line-clamp-2">{agent.domain}</p>
             </div>
           </div>
         ))}
       </div>
-      <p className="text-text-dim text-[10px] leading-relaxed">
-        Ask Atlas to adjust the roster, or hit <span className="text-text-secondary font-medium">Approve Council</span> in the panel when ready.
-      </p>
+
+      <div className="flex items-center justify-between pt-2 border-t border-emerald/10">
+        <p className="text-text-dim text-xs leading-relaxed max-w-sm">
+          Ask Atlas to adjust the roster, or approve the council to proceed to the action plan.
+        </p>
+        <button
+          onClick={onApprove}
+          disabled={isLoading}
+          className="flex-shrink-0 py-2.5 px-6 rounded-xl bg-emerald hover:bg-emerald/90 text-forest-night text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(var(--color-emerald)/0.3)]"
+        >
+          {isLoading ? 'Generating plan…' : 'Approve Council'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Gate2ApprovalBanner({ plan, onApprove, isLoading }) {
+  return (
+    <div className="rounded-xl border border-emerald/20 bg-emerald/5 p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-emerald flex-shrink-0" />
+        <p className="text-xs uppercase tracking-widest text-emerald font-semibold">Plan Generated</p>
+      </div>
+
+      <div className="text-sm leading-relaxed text-text-secondary bg-forest-mid/50 p-4 rounded-lg border border-border-subtle">
+        <span className="text-emerald font-medium block mb-2">Executive Summary:</span>
+        {plan.summary}
+      </div>
+
+      <div className="flex items-center gap-6 text-sm">
+        <div>
+          <span className="text-text-dim block text-[10px] uppercase tracking-widest mb-1">Estimated Cost</span>
+          <span className="text-text-primary font-medium">{plan.cost_estimate}</span>
+        </div>
+        <div>
+          <span className="text-text-dim block text-[10px] uppercase tracking-widest mb-1">Timeline</span>
+          <span className="text-text-primary font-medium">{plan.timeline_total}</span>
+        </div>
+        <div>
+          <span className="text-text-dim block text-[10px] uppercase tracking-widest mb-1">Tasks</span>
+          <span className="text-text-primary font-medium">{plan.tasks?.length ?? 0}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-2 border-t border-emerald/10">
+        <p className="text-text-dim text-xs leading-relaxed max-w-sm">
+          Ask Atlas for revisions, or approve the action plan to finalize the session.
+        </p>
+        <button
+          onClick={onApprove}
+          disabled={isLoading}
+          className="flex-shrink-0 py-2.5 px-6 rounded-xl bg-emerald hover:bg-emerald/90 text-forest-night text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(var(--color-emerald)/0.3)]"
+        >
+          {isLoading ? 'Finalizing…' : 'Approve Plan'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function FinalPlanDisplay({ plan }) {
+  return (
+    <div className="rounded-2xl border border-border-subtle bg-forest-panel p-6 space-y-6 mt-4 shadow-xl">
+      <div className="pb-4 border-b border-border-subtle">
+        <h2 className="text-2xl font-semibold text-text-primary mb-2">Final Action Plan</h2>
+        <p className="text-text-secondary leading-relaxed">{plan.summary}</p>
+      </div>
+
+      <div className="flex flex-wrap gap-4 text-sm bg-forest-night p-4 rounded-xl border border-border-subtle">
+        <div className="flex-1 min-w-[120px]">
+          <span className="text-emerald block text-[10px] uppercase tracking-widest font-medium mb-1">Estimated Cost</span>
+          <span className="text-text-primary font-medium">{plan.cost_estimate}</span>
+        </div>
+        <div className="flex-1 min-w-[120px]">
+          <span className="text-emerald block text-[10px] uppercase tracking-widest font-medium mb-1">Timeline</span>
+          <span className="text-text-primary font-medium">{plan.timeline_total}</span>
+        </div>
+        <div className="flex-2 min-w-[200px]">
+          <span className="text-emerald block text-[10px] uppercase tracking-widest font-medium mb-1">Tech Stack</span>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {(plan.tech_stack ?? []).map((tech) => (
+              <span key={tech} className="text-xs bg-emerald/10 text-emerald px-2 py-0.5 rounded border border-emerald/20">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-sm uppercase tracking-widest text-text-dim font-medium">Task Breakdown</h3>
+        <div className="grid grid-cols-1 gap-3">
+          {(plan.tasks ?? []).map((task) => (
+            <div key={task.id} className="bg-forest-mid/30 p-4 rounded-xl border border-border-subtle hover:border-emerald/30 transition-colors">
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <h4 className="text-text-primary font-medium">{task.id}. {task.title}</h4>
+                <span className="flex-shrink-0 text-[10px] bg-forest-night border border-border-subtle px-2 py-1 rounded text-text-dim whitespace-nowrap">
+                  {task.timeline}
+                </span>
+              </div>
+              <p className="text-sm text-text-secondary leading-relaxed mb-3">{task.description}</p>
+              <div className="flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded bg-emerald/10 border border-emerald/20 flex items-center justify-center text-[9px] font-bold font-mono text-emerald">
+                  {task.owner?.charAt(0) ?? '?'}
+                </span>
+                <span className="text-xs text-emerald font-medium">{task.owner}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
