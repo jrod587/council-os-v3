@@ -392,6 +392,7 @@ export default function App() {
         team={team}
         teamRationale={teamRationale}
         actionPlan={actionPlan}
+        problemRefined={problemRefined}
         onApproveTeam={approveTeam}
         onApprovePlan={approvePlan}
         onSendMessage={sendMessage}

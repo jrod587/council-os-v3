@@ -15,6 +15,7 @@ export default function MiddlePanel({
   team,
   teamRationale,
   actionPlan,
+  problemRefined,
   onApproveTeam,
   onApprovePlan,
   onSendMessage,
@@ -112,7 +113,7 @@ export default function MiddlePanel({
               <Gate2ApprovalBanner plan={actionPlan} onApprove={onApprovePlan} isLoading={isLoading} />
             )}
             {stage === 'plan_approved' && actionPlan && (
-              <FinalPlanDisplay plan={actionPlan} />
+              <FinalPlanDisplay plan={actionPlan} problemRefined={problemRefined} />
             )}
             {isLoading && <TypingIndicator />}
           </>
@@ -399,7 +400,7 @@ function Gate2ApprovalBanner({ plan, onApprove, isLoading }) {
   )
 }
 
-function FinalPlanDisplay({ plan }) {
+function FinalPlanDisplay({ plan, problemRefined }) {
   return (
     <div className="rounded-2xl border border-border-subtle bg-forest-panel p-6 space-y-6 mt-4 shadow-xl">
       <div className="pb-4 border-b border-border-subtle">
@@ -450,7 +451,128 @@ function FinalPlanDisplay({ plan }) {
           ))}
         </div>
       </div>
+
+      <ExportBlock plan={plan} problemRefined={problemRefined} />
     </div>
+  )
+}
+
+function ExportBlock({ plan, problemRefined }) {
+  const [copied, setCopied] = useState(false)
+
+  const buildMarkdown = () => {
+    const lines = []
+    lines.push('# Council OS — Action Plan')
+    lines.push('')
+    if (problemRefined) {
+      lines.push(`**Problem:** ${problemRefined}`)
+      lines.push('')
+    }
+    if (plan.summary) {
+      lines.push('## Executive Summary')
+      lines.push(plan.summary)
+      lines.push('')
+    }
+    if (plan.tasks?.length > 0) {
+      lines.push('## Action Plan')
+      lines.push('')
+      plan.tasks.forEach((task) => {
+        lines.push(`### ${task.id ?? ''}. ${task.title ?? 'Task'}`)
+        lines.push(`**Owner:** ${task.owner ?? '—'} · **Timeline:** ${task.timeline ?? '—'}`)
+        lines.push('')
+        lines.push(task.description ?? '')
+        lines.push('')
+      })
+    }
+    if (plan.tech_stack?.length > 0) {
+      lines.push('## Tech Stack')
+      lines.push(plan.tech_stack.join(', '))
+      lines.push('')
+    }
+    const meta = []
+    if (plan.cost_estimate) meta.push(`**Cost Estimate:** ${plan.cost_estimate}`)
+    if (plan.timeline_total) meta.push(`**Total Timeline:** ${plan.timeline_total}`)
+    if (meta.length > 0) {
+      lines.push('## Summary')
+      lines.push(meta.join('  \n'))
+    }
+    return lines.join('\n')
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildMarkdown())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2200)
+    } catch { /* noop */ }
+  }
+
+  const handleDownload = () => {
+    const blob = new Blob([buildMarkdown()], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'council-os-action-plan.md'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="pt-4 border-t border-border-subtle space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-emerald font-semibold">Export Deliverable</p>
+          <p className="text-text-dim text-[11px] mt-0.5">Paste into Notion, Linear, or any planning tool.</p>
+        </div>
+        <span className="text-[9px] bg-emerald/10 text-emerald border border-emerald/20 px-2 py-0.5 rounded font-mono">markdown</span>
+      </div>
+      <div className="flex gap-3">
+        <button
+          onClick={handleCopy}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-sm font-medium transition-all duration-200 ${
+            copied
+              ? 'border-emerald/50 bg-emerald/15 text-emerald'
+              : 'border-border-subtle bg-forest-mid hover:border-emerald/40 hover:bg-emerald/10 hover:text-emerald text-text-secondary'
+          }`}
+        >
+          {copied ? <CheckIcon /> : <ClipboardIcon />}
+          {copied ? 'Copied!' : 'Copy Markdown'}
+        </button>
+        <button
+          onClick={handleDownload}
+          className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-border-subtle bg-forest-mid hover:border-emerald/40 hover:bg-emerald/10 hover:text-emerald text-text-secondary text-sm font-medium transition-all duration-200"
+        >
+          <DownloadIcon />
+          Download .md
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ClipboardIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <rect x="4.5" y="1" width="7" height="9.5" rx="1.2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M2.5 3.5H2A1 1 0 0 0 1 4.5v7A1 1 0 0 0 2 12.5h6a1 1 0 0 0 1-1V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M2 6.5L5 9.5L11 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M6.5 1v8M4 6.5L6.5 9 9 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M1 11h11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
   )
 }
 
