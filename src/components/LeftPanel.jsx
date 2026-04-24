@@ -89,8 +89,9 @@ export default function LeftPanel({
         )}
       </div>
 
-      <div className="border-t border-border-subtle px-4 py-3 text-[10px] text-text-dim">
-        Phase 4 hardening · auth + credits + billing gate
+      <div className="border-t border-border-subtle px-4 py-3 space-y-1">
+        <p className="text-[10px] text-text-dim">Built by Jeff Rodriguez</p>
+        <p className="text-[10px] text-text-dim">Council OS v3 · <a href="https://council-os-v3.vercel.app" target="_blank" rel="noreferrer" className="underline hover:text-text-secondary transition-colors">council-os-v3.vercel.app</a></p>
       </div>
     </div>
   )

@@ -22,6 +22,8 @@ export default function MiddlePanel({
   error,
   authReady,
   isAuthenticated,
+  isNewUser,
+  onDismissWelcome,
   authEmail,
   setAuthEmail,
   onSendMagicLink,
@@ -65,6 +67,20 @@ export default function MiddlePanel({
     }
   }
 
+  // Full-screen landing page for unauthenticated visitors
+  if (authReady && !isAuthenticated) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0 bg-forest-night overflow-y-auto">
+        <LandingHero
+          authEmail={authEmail}
+          setAuthEmail={setAuthEmail}
+          onSendMagicLink={onSendMagicLink}
+          authEmailSent={authEmailSent}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-forest-night">
       <div className="h-14 flex items-center justify-between px-6 border-b border-border-subtle flex-shrink-0">
@@ -78,28 +94,24 @@ export default function MiddlePanel({
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
         {!authReady ? (
           <GateCard title="Checking access" body="Loading your auth session and credits." />
-        ) : !isAuthenticated ? (
-          <AuthGate
-            authEmail={authEmail}
-            setAuthEmail={setAuthEmail}
-            onSendMagicLink={onSendMagicLink}
-            authEmailSent={authEmailSent}
-          />
         ) : !sessionReady ? (
-          <BillingGate
-            availableCredits={availableCredits}
-            onStartSession={onStartSession}
-            isStartingSession={isStartingSession}
-            isBuying={isBuying}
-            onCheckout={onCheckout}
-            founderCode={founderCode}
-            setFounderCode={setFounderCode}
-            onRedeemFounderCode={onRedeemFounderCode}
-            isRedeemingFounderCode={isRedeemingFounderCode}
-            nextCreditSource={nextCreditSource}
-            checkoutState={checkoutState}
-            viewerLoading={viewerLoading}
-          />
+          <>
+            {isNewUser && <WelcomeBanner onDismiss={onDismissWelcome} />}
+            <BillingGate
+              availableCredits={availableCredits}
+              onStartSession={onStartSession}
+              isStartingSession={isStartingSession}
+              isBuying={isBuying}
+              onCheckout={onCheckout}
+              founderCode={founderCode}
+              setFounderCode={setFounderCode}
+              onRedeemFounderCode={onRedeemFounderCode}
+              isRedeemingFounderCode={isRedeemingFounderCode}
+              nextCreditSource={nextCreditSource}
+              checkoutState={checkoutState}
+              viewerLoading={viewerLoading}
+            />
+          </>
         ) : (
           <>
             {isEmpty && <EmptyState />}
@@ -165,33 +177,184 @@ export default function MiddlePanel({
   )
 }
 
-function AuthGate({ authEmail, setAuthEmail, onSendMagicLink, authEmailSent }) {
+function LandingHero({ authEmail, setAuthEmail, onSendMagicLink, authEmailSent }) {
+  const steps = [
+    {
+      num: '01',
+      title: 'Describe the problem',
+      body: 'Drop in your raw idea, challenge, or question. Atlas sharpens it into something precise before anything else happens.',
+    },
+    {
+      num: '02',
+      title: 'Approve your council',
+      body: 'AI assembles the right domain experts and tells you exactly why each one is at the table. Adjust or approve.',
+    },
+    {
+      num: '03',
+      title: 'Get the plan',
+      body: 'A structured action plan with tasks, owners, and timelines. Export to Notion, Linear, or anywhere.',
+    },
+  ]
+
+  const roadmap = [
+    'Council Teams — share sessions with real collaborators',
+    'Async mode — drop a problem, get the plan in your inbox',
+    'Direct exports — push to Notion, Linear, GitHub Issues',
+    'Custom agent library — build and save your own council',
+  ]
+
   return (
-    <GateCard
-      title="Sign in to unlock Council OS"
-      body="Magic link only. No password flow. Sessions, credits, and purchases are tied to your real user account."
-    >
-      <div className="space-y-3">
-        <input
-          value={authEmail}
-          onChange={(event) => setAuthEmail(event.target.value)}
-          placeholder="you@example.com"
-          className="w-full rounded-xl border border-border-subtle bg-forest-panel px-4 py-3 text-sm text-text-primary placeholder-text-dim focus:outline-none focus:border-emerald/40"
-        />
-        <button
-          onClick={onSendMagicLink}
-          disabled={!authEmail.trim()}
-          className="w-full rounded-xl border border-emerald/30 bg-emerald/15 px-4 py-3 text-sm font-medium text-emerald transition-colors hover:bg-emerald/25 disabled:opacity-40"
-        >
-          Send Magic Link
-        </button>
-        {authEmailSent && (
-          <p className="text-xs text-text-secondary">
-            Magic link sent. Open the email on this device and come back here after the redirect lands.
-          </p>
-        )}
+    <div className="flex flex-col">
+      {/* Hero */}
+      <div className="flex flex-col items-center text-center px-8 pt-20 pb-14">
+        <div className="mb-8">
+          <svg width="56" height="62" viewBox="0 0 72 78" fill="none">
+            <polygon points="36,2 68,19 68,59 36,76 4,59 4,19"
+              fill="rgb(var(--color-emerald) / 0.08)"
+              stroke="rgb(var(--color-emerald) / 0.5)"
+              strokeWidth="1.5"
+            />
+            <polygon points="36,16 56,27 56,51 36,62 16,51 16,27"
+              fill="rgb(var(--color-emerald) / 0.05)"
+              stroke="rgb(var(--color-emerald) / 0.2)"
+              strokeWidth="1"
+            />
+            <circle cx="36" cy="39" r="5" fill="rgb(var(--color-emerald))" opacity="0.7" />
+          </svg>
+        </div>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald/20 bg-emerald/5 mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald animate-pulse" />
+          <span className="text-emerald text-[11px] font-medium tracking-wide">First 2 sessions are on us · No card needed</span>
+        </div>
+
+        <h1 className="text-4xl font-bold text-text-primary leading-tight mb-5 max-w-xl" style={{ letterSpacing: '-0.02em' }}>
+          Your problem.<br />
+          <span style={{ color: 'rgb(var(--color-emerald))' }}>A council of AI agents.</span><br />
+          A plan you can act on.
+        </h1>
+
+        <p className="text-text-secondary text-base leading-relaxed max-w-lg mb-10">
+          Stop switching tabs between AI tools. Council OS breaks your problem down, assembles the right experts, and delivers a structured action plan — in minutes, not hours. And you get something you can go back to.
+        </p>
+
+        <div className="w-full max-w-sm">
+          {!authEmailSent ? (
+            <div className="space-y-3">
+              <input
+                type="email"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && authEmail.trim() && onSendMagicLink()}
+                placeholder="your@email.com"
+                className="w-full rounded-xl border border-border-subtle bg-forest-panel px-4 py-3.5 text-sm text-text-primary placeholder-text-dim focus:outline-none focus:border-emerald/50 transition-colors text-center"
+              />
+              <button
+                onClick={onSendMagicLink}
+                disabled={!authEmail.trim()}
+                className="w-full rounded-xl border border-emerald/40 bg-emerald/15 px-4 py-3.5 text-sm font-semibold text-emerald transition-all hover:bg-emerald/25 hover:border-emerald/60 disabled:opacity-40"
+                style={{ boxShadow: '0 0 20px rgb(var(--color-emerald) / 0.1)' }}
+              >
+                Start for free →
+              </button>
+              <p className="text-text-dim text-[11px]">Magic link only · No password · No card required</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-emerald/20 px-5 py-4 space-y-1" style={{ background: 'rgb(var(--color-emerald) / 0.08)' }}>
+              <p className="text-emerald text-sm font-medium">Check your inbox</p>
+              <p className="text-text-secondary text-xs">Magic link sent. Open it on this device — you'll land right back here.</p>
+            </div>
+          )}
+        </div>
       </div>
-    </GateCard>
+
+      {/* How it works */}
+      <div className="border-t border-border-subtle px-8 pt-12 pb-14">
+        <p className="text-center text-[10px] uppercase tracking-widest text-text-dim mb-10">How it works</p>
+        <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
+          {steps.map((step) => (
+            <div key={step.num} className="flex flex-col items-center text-center">
+              <div className="w-10 h-10 rounded-xl border border-emerald/20 flex items-center justify-center mb-4" style={{ background: 'rgb(var(--color-emerald) / 0.08)' }}>
+                <span className="text-emerald text-xs font-bold font-mono">{step.num}</span>
+              </div>
+              <h3 className="text-text-primary text-sm font-semibold mb-2">{step.title}</h3>
+              <p className="text-text-secondary text-xs leading-relaxed">{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Moat */}
+      <div className="border-t border-border-subtle bg-forest-panel/30 px-8 py-12">
+        <div className="max-w-2xl mx-auto">
+          <p className="text-[10px] uppercase tracking-widest text-emerald mb-4">Why not just ChatGPT?</p>
+          <p className="text-text-secondary text-sm leading-relaxed mb-3">
+            ChatGPT gives you a conversation. Council OS gives you a <em>council</em> — a structured team of domain-specific agents that debate your problem, then hand you a concrete artifact you can act on. Not a transcript. A plan.
+          </p>
+          <p className="text-text-dim text-xs leading-relaxed">
+            The gate flow forces problem refinement before any plan is generated. Each agent has a defined role and domain. The output is structured, exportable, and designed to be revisited — not lost in a chat window.
+          </p>
+        </div>
+      </div>
+
+      {/* Roadmap */}
+      <div className="border-t border-border-subtle px-8 py-12">
+        <div className="max-w-2xl mx-auto">
+          <p className="text-[10px] uppercase tracking-widest text-text-dim mb-6">What's coming</p>
+          <div className="grid grid-cols-2 gap-3">
+            {roadmap.map((item) => (
+              <div key={item} className="flex items-start gap-2.5 text-xs text-text-secondary">
+                <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded border border-emerald/20 flex items-center justify-center" style={{ background: 'rgb(var(--color-emerald) / 0.08)' }}>
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                    <path d="M1.5 4h5M4 1.5L6.5 4 4 6.5" stroke="rgb(var(--color-emerald))" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-border-subtle px-8 py-5 flex items-center justify-between">
+        <p className="text-text-dim text-[10px]">Built by Jeff Rodriguez · Council OS v3</p>
+        <button
+          onClick={() => document.getElementById('policy-inline')?.classList.toggle('hidden')}
+          className="text-text-dim text-[10px] underline hover:text-text-secondary transition-colors"
+        >
+          Refund Policy
+        </button>
+      </div>
+      <div id="policy-inline" className="hidden border-t border-border-subtle px-8 py-5">
+        <p className="text-text-dim text-xs leading-relaxed max-w-2xl mx-auto">
+          <strong className="text-text-secondary">Session Credits:</strong> Credits are consumed when a session starts. If Atlas fails before meaningful output is generated, your credit is automatically restored. No partial refunds on completed sessions. Email the address from your magic link with any questions.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function WelcomeBanner({ onDismiss }) {
+  return (
+    <div className="rounded-xl border border-emerald/30 p-4 flex items-start gap-4" style={{ background: 'rgb(var(--color-emerald) / 0.06)' }}>
+      <div className="flex-shrink-0 w-9 h-9 rounded-lg border border-emerald/20 flex items-center justify-center text-lg leading-none" style={{ background: 'rgb(var(--color-emerald) / 0.12)' }}>
+        👋
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-emerald font-semibold text-sm mb-1">Welcome to Council OS</p>
+        <p className="text-text-secondary text-xs leading-relaxed">
+          You have <strong className="text-text-primary">2 free sessions</strong> loaded — no card needed. Start a session below to bring your first problem to the council.
+        </p>
+      </div>
+      <button
+        onClick={onDismiss}
+        className="flex-shrink-0 text-text-dim hover:text-text-secondary transition-colors text-xl leading-none mt-0.5 px-1"
+        aria-label="Dismiss welcome banner"
+      >
+        ×
+      </button>
+    </div>
   )
 }
 

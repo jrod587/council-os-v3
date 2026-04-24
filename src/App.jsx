@@ -61,6 +61,7 @@ export default function App() {
   const [viewer, setViewer] = useState(null)
   const [viewerLoading, setViewerLoading] = useState(false)
   const [checkoutState, setCheckoutState] = useState(null)
+  const [isNewUser, setIsNewUser] = useState(false)
 
   const estimatedCostUSD = costEstimate(tokenUsage).toFixed(4)
   const budgetPercent = Math.min((costEstimate(tokenUsage) / SESSION_BUDGET_USD) * 100, 100)
@@ -115,6 +116,7 @@ export default function App() {
     try {
       const payload = await apiFetch('/api/me', { method: 'GET' })
       setViewer(payload)
+      if (payload.isNewUser) setIsNewUser(true)
 
       if (preserveExisting && !sessionId && payload.activeSession) {
         hydrateSession(payload.activeSession)
@@ -399,6 +401,8 @@ export default function App() {
         error={error}
         authReady={authReady}
         isAuthenticated={Boolean(authSession?.user)}
+        isNewUser={isNewUser}
+        onDismissWelcome={() => setIsNewUser(false)}
         authEmail={authEmail}
         setAuthEmail={setAuthEmail}
         onSendMagicLink={handleSendMagicLink}

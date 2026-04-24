@@ -1,4 +1,6 @@
-import { getFounderGrantCredits, getSessionPriceUsd, getViewerContext, json, requireAuthUser } from './_lib/server.js'
+import { getFounderGrantCredits, getSessionPriceUsd, getViewerContext, json, requireAuthUser, supabaseAdmin } from './_lib/server.js'
+
+const SIGNUP_CREDITS = 2
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,7 +9,34 @@ export default async function handler(req, res) {
 
   try {
     const { user } = await requireAuthUser(req)
-    const viewer = await getViewerContext(user)
+    let viewer = await getViewerContext(user)
+
+    // New user: no ledger entries, no credits, no sessions ever
+    const isNewUser = (
+      viewer.creditLedger.length === 0 &&
+      (viewer.account.founder_credits_remaining ?? 0) === 0 &&
+      (viewer.account.purchased_credits_remaining ?? 0) === 0 &&
+      viewer.recentSessions.length === 0
+    )
+
+    if (isNewUser) {
+      await supabaseAdmin
+        .from('user_accounts')
+        .update({ founder_credits_remaining: SIGNUP_CREDITS })
+        .eq('id', viewer.account.id)
+
+      await supabaseAdmin
+        .from('credit_ledger')
+        .insert({
+          user_account_id: viewer.account.id,
+          source_type: 'manual_adjustment',
+          credit_delta: SIGNUP_CREDITS,
+          notes: `Welcome bonus — ${SIGNUP_CREDITS} free starter credits on signup`,
+        })
+
+      // Re-fetch so the response reflects the granted credits
+      viewer = await getViewerContext(user)
+    }
 
     return json(res, 200, {
       user: {
@@ -20,6 +49,7 @@ export default async function handler(req, res) {
       activeSession: viewer.activeSession,
       availableCredits: viewer.availableCredits,
       nextCreditSource: viewer.nextCreditSource,
+      isNewUser,
       pricing: {
         sessionPriceUsd: getSessionPriceUsd(),
         founderGrantCredits: getFounderGrantCredits(),
