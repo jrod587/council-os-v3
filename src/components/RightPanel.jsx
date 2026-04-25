@@ -253,9 +253,37 @@ function GateBlock({ number, label, active, locked, lockedHint, complete, childr
   )
 }
 
-function PlanApprovedState({ sessionSaved, plan, problemRefined }) {
+function PromptKitCard({ task }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(task.prompt_template || '')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* noop */ }
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="flex items-center justify-between gap-3 bg-forest-mid/30 p-2.5 rounded-lg border border-border-subtle">
+      <p className="text-text-secondary text-[11px] font-medium leading-snug truncate flex-1" title={task.title}>
+        {task.id ?? ''}. {task.title}
+      </p>
+      <button
+        onClick={handleCopy}
+        disabled={!task.prompt_template}
+        className="flex-shrink-0 flex items-center gap-1.5 px-2 py-1 rounded bg-forest-mid border border-border-subtle hover:border-emerald/40 hover:text-emerald text-text-dim text-[10px] font-medium transition-colors disabled:opacity-50"
+      >
+        {copied ? <CheckIcon /> : <ClipboardIcon />}
+        {copied ? 'Copied!' : 'Copy Prompt'}
+      </button>
+    </div>
+  )
+}
+
+function SessionDashboard({ sessionSaved, plan, team, problemRefined }) {
+  return (
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div className="w-5 h-5 rounded-full bg-emerald/15 border border-emerald/30 flex items-center justify-center flex-shrink-0">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -266,12 +294,55 @@ function PlanApprovedState({ sessionSaved, plan, problemRefined }) {
           {sessionSaved ? 'Session saved' : 'Plan approved'}
         </p>
       </div>
-      {plan && (
-        <>
-          <ActionPlanDisplay plan={plan} isApproved />
-          <ExportControls plan={plan} problemRefined={problemRefined} />
-        </>
-      )}
+
+      {/* Council Summary */}
+      <div className="space-y-2">
+        <p className="text-[9px] text-text-dim uppercase tracking-widest font-medium">Your Council</p>
+        <div className="space-y-1.5">
+          {team?.map((agent, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="flex-shrink-0 text-[9px] bg-emerald/10 text-emerald border border-emerald/20 px-1.5 py-0.5 rounded font-mono">
+                {agent.role}
+              </span>
+              {agent.domain && (
+                <span className="text-[10px] text-text-dim truncate" title={agent.domain}>
+                  {agent.domain}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Task Tracker */}
+      <div className="space-y-2">
+        <p className="text-[9px] text-text-dim uppercase tracking-widest font-medium">Execution Plan</p>
+        <div className="space-y-1.5 border-l-2 border-emerald/20 pl-2">
+          {plan?.tasks?.map((task, i) => (
+            <div key={task.id ?? i} className="flex items-center gap-2">
+              <span className="text-[10px] text-text-dim font-mono">{task.id ?? i + 1}.</span>
+              <p className="text-[11px] text-text-secondary font-medium truncate flex-1" title={task.title}>{task.title}</p>
+              <span className="text-[9px] text-emerald bg-emerald/10 px-1.5 py-0.5 rounded">{task.owner}</span>
+              <span className="text-[9px] text-text-dim">{task.timeline}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Prompt Kit */}
+      <div className="space-y-2">
+        <div>
+          <p className="text-[9px] text-text-dim uppercase tracking-widest font-medium mb-0.5">Prompt Kit — relay these to your LLM</p>
+          <p className="text-[10px] text-text-dim leading-snug">Each phase has a ready-to-use prompt. Copy it, paste it into any AI, paste the response into your tracking doc.</p>
+        </div>
+        <div className="space-y-1.5">
+          {plan?.tasks?.map((task, i) => (
+            <PromptKitCard key={task.id ?? i} task={task} />
+          ))}
+        </div>
+      </div>
+
+      <ExportControls plan={plan} problemRefined={problemRefined} />
     </div>
   )
 }
@@ -367,7 +438,7 @@ export default function RightPanel({
         >
           {isTeamApproved && !actionPlan && <Gate2Loading />}
           {isPlanProposed && actionPlan && <ActionPlanDisplay plan={actionPlan} onApprovePlan={onApprovePlan} />}
-          {isPlanApproved && <PlanApprovedState sessionSaved={sessionSaved} plan={actionPlan} problemRefined={problemRefined} />}
+          {isPlanApproved && <SessionDashboard sessionSaved={sessionSaved} plan={actionPlan} team={team} problemRefined={problemRefined} />}
         </GateBlock>
 
         <div className="gate-locked rounded-xl p-4">
@@ -412,6 +483,14 @@ function DownloadIcon() {
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
       <path d="M6 1v7M3.5 5.5L6 8l2.5-2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M1 10h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

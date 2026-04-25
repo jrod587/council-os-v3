@@ -532,7 +532,27 @@ function Gate2ApprovalBanner({ plan, onApprove, isLoading }) {
         {plan.summary}
       </div>
 
-      <div className="flex items-center gap-6 text-sm">
+      {plan.tasks && plan.tasks.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-widest text-text-dim font-medium">Proposed Phases</p>
+          <div className="grid grid-cols-1 gap-2">
+            {plan.tasks.map((task, index) => (
+              <div key={task?.id ?? index} className="flex items-center justify-between bg-forest-night p-3 rounded-lg border border-border-subtle">
+                <div className="flex items-center gap-3">
+                  <span className="text-text-dim text-xs font-mono">{task?.id ?? index + 1}.</span>
+                  <p className="text-text-primary text-sm font-medium">{task?.title ?? 'Task'}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-emerald bg-emerald/10 px-2 py-0.5 rounded border border-emerald/20">{task?.owner ?? 'Unknown'}</span>
+                  <span className="text-[10px] text-text-dim">{task?.timeline ?? '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-6 text-sm bg-forest-night/30 p-3 rounded-lg">
         <div>
           <span className="text-text-dim block text-[10px] uppercase tracking-widest mb-1">Estimated Cost</span>
           <span className="text-text-primary font-medium">{plan.cost_estimate}</span>
@@ -549,7 +569,7 @@ function Gate2ApprovalBanner({ plan, onApprove, isLoading }) {
 
       <div className="flex items-center justify-between pt-2 border-t border-emerald/10">
         <p className="text-text-dim text-xs leading-relaxed max-w-sm">
-          Ask Atlas for revisions, or approve the action plan to finalize the session.
+          Ask Atlas for revisions, or approve the action plan below to finalize.
         </p>
         <button
           onClick={onApprove}
@@ -563,56 +583,127 @@ function Gate2ApprovalBanner({ plan, onApprove, isLoading }) {
   )
 }
 
-function FinalPlanDisplay({ plan, problemRefined }) {
+function TaskPhaseCard({ task, index }) {
+  const [promptExpanded, setPromptExpanded] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(task.prompt_template || '')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* noop */ }
+  }
+
   return (
-    <div className="rounded-2xl border border-border-subtle bg-forest-panel p-6 space-y-6 mt-4 shadow-xl">
-      <div className="pb-4 border-b border-border-subtle">
-        <h2 className="text-2xl font-semibold text-text-primary mb-2">Final Action Plan</h2>
-        <p className="text-text-secondary leading-relaxed">{plan.summary}</p>
+    <div className="bg-forest-mid/30 p-5 rounded-xl border border-border-subtle hover:border-emerald/30 transition-colors space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <h4 className="text-lg font-semibold text-text-primary">{task?.id ?? index + 1}. {task?.title ?? 'Phase'}</h4>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald/10 border border-emerald/20 text-xs font-medium text-emerald">
+            <span className="w-4 h-4 rounded-full bg-emerald/20 flex items-center justify-center text-[8px] font-bold font-mono">
+              {task?.owner?.charAt(0) ?? '?'}
+            </span>
+            {task?.owner ?? 'Unknown owner'}
+          </span>
+          <span className="px-2.5 py-1 bg-forest-night border border-border-subtle rounded text-xs text-text-dim whitespace-nowrap">
+            {task?.timeline ?? 'Unknown timeline'}
+          </span>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 text-sm bg-forest-night p-4 rounded-xl border border-border-subtle">
-        <div className="flex-1 min-w-[120px]">
-          <span className="text-emerald block text-[10px] uppercase tracking-widest font-medium mb-1">Estimated Cost</span>
-          <span className="text-text-primary font-medium">{plan.cost_estimate}</span>
+      {task?.agent_rationale && (
+        <p className="text-xs italic text-text-dim">Why: {task.agent_rationale}</p>
+      )}
+
+      {task?.description && (
+        <p className="text-sm text-text-secondary leading-relaxed">{task.description}</p>
+      )}
+
+      {task?.deliverable && (
+        <div className="text-sm text-text-secondary bg-forest-night/50 p-3 rounded-lg border border-border-subtle">
+          <span className="font-medium text-text-primary mr-2">Deliverable:</span>
+          {task.deliverable}
         </div>
-        <div className="flex-1 min-w-[120px]">
-          <span className="text-emerald block text-[10px] uppercase tracking-widest font-medium mb-1">Timeline</span>
-          <span className="text-text-primary font-medium">{plan.timeline_total}</span>
+      )}
+
+      {task?.prompt_template && (
+        <div className="pt-2 border-t border-border-subtle/50 mt-4">
+          <button
+            onClick={() => setPromptExpanded(!promptExpanded)}
+            className="flex items-center gap-2 text-xs font-medium text-emerald hover:text-emerald/80 transition-colors"
+          >
+            {promptExpanded ? '▼ Hide Prompt Template' : '▶ Show Prompt Template'}
+          </button>
+          
+          {promptExpanded && (
+            <div className="mt-3 relative group">
+              <pre className="bg-[#111] border border-border-subtle rounded-lg p-4 text-xs text-text-secondary overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed">
+                {task.prompt_template}
+              </pre>
+              <button
+                onClick={handleCopyPrompt}
+                className="absolute top-2 right-2 px-2.5 py-1 rounded-md bg-forest-mid/80 border border-border-subtle text-[10px] font-medium text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity hover:bg-forest-panel hover:text-text-primary flex items-center gap-1.5"
+              >
+                {copied ? <CheckIcon /> : <ClipboardIcon />}
+                {copied ? 'Copied' : 'Copy Prompt'}
+              </button>
+            </div>
+          )}
         </div>
-        <div className="flex-2 min-w-[200px]">
-          <span className="text-emerald block text-[10px] uppercase tracking-widest font-medium mb-1">Tech Stack</span>
-          <div className="flex flex-wrap gap-1.5 mt-1">
-            {(plan.tech_stack ?? []).map((tech) => (
-              <span key={tech} className="text-xs bg-emerald/10 text-emerald px-2 py-0.5 rounded border border-emerald/20">
-                {tech}
-              </span>
-            ))}
+      )}
+    </div>
+  )
+}
+
+function FinalPlanDisplay({ plan, problemRefined }) {
+  return (
+    <div className="rounded-2xl border border-border-subtle bg-forest-panel p-8 space-y-8 mt-4 shadow-xl">
+      <div className="pb-6 border-b border-border-subtle">
+        <h2 className="text-3xl font-bold text-text-primary mb-6 tracking-tight">Council OS — Action Plan</h2>
+        
+        {plan.problem_statement && (
+          <div className="mb-6">
+            <h3 className="text-xs uppercase tracking-widest text-emerald font-semibold mb-2">Problem</h3>
+            <p className="text-text-secondary leading-relaxed">{plan.problem_statement}</p>
           </div>
+        )}
+
+        <div>
+          <h3 className="text-xs uppercase tracking-widest text-emerald font-semibold mb-2">Executive Summary</h3>
+          <p className="text-text-secondary leading-relaxed">{plan.summary}</p>
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm uppercase tracking-widest text-text-dim font-medium">Task Breakdown</h3>
-        <div className="grid grid-cols-1 gap-3">
-          {(plan.tasks ?? []).map((task, index) => (
-            <div key={task?.id ?? index} className="bg-forest-mid/30 p-4 rounded-xl border border-border-subtle hover:border-emerald/30 transition-colors">
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <h4 className="text-text-primary font-medium">{task?.id ?? index + 1}. {task?.title ?? 'Task'}</h4>
-                <span className="flex-shrink-0 text-[10px] bg-forest-night border border-border-subtle px-2 py-1 rounded text-text-dim whitespace-nowrap">
-                  {task?.timeline ?? 'Unknown timeline'}
-                </span>
-              </div>
-              <p className="text-sm text-text-secondary leading-relaxed mb-3">{task?.description ?? ''}</p>
-              <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded bg-emerald/10 border border-emerald/20 flex items-center justify-center text-[9px] font-bold font-mono text-emerald">
-                  {task?.owner?.charAt(0) ?? '?'}
-                </span>
-                <span className="text-xs text-emerald font-medium">{task?.owner ?? 'Unknown owner'}</span>
-              </div>
-            </div>
-          ))}
+        {(plan.tasks ?? []).map((task, index) => (
+          <TaskPhaseCard key={task?.id ?? index} task={task} index={index} />
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-6 py-6 border-t border-b border-border-subtle bg-forest-night/30 px-6 rounded-xl">
+        <div>
+          <span className="text-text-dim block text-[10px] uppercase tracking-widest mb-1">Estimated Cost</span>
+          <span className="text-text-primary font-medium">{plan.cost_estimate || '—'}</span>
         </div>
+        <div>
+          <span className="text-text-dim block text-[10px] uppercase tracking-widest mb-1">Total Timeline</span>
+          <span className="text-text-primary font-medium">{plan.timeline_total || '—'}</span>
+        </div>
+        <div>
+          <span className="text-text-dim block text-[10px] uppercase tracking-widest mb-1">Phases</span>
+          <span className="text-text-primary font-medium">{plan.tasks?.length || 0}</span>
+        </div>
+        
+        {plan.tech_stack?.length > 0 && (
+          <div className="ml-auto flex flex-wrap gap-2 justify-end">
+            {plan.tech_stack.map(tech => (
+              <span key={tech} className="text-xs bg-emerald/10 text-emerald px-2.5 py-1 rounded border border-emerald/20">
+                {tech}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <ExportBlock plan={plan} problemRefined={problemRefined} />
@@ -627,8 +718,8 @@ function ExportBlock({ plan, problemRefined }) {
     const lines = []
     lines.push('# Council OS — Action Plan')
     lines.push('')
-    if (problemRefined) {
-      lines.push(`**Problem:** ${problemRefined}`)
+    if (plan.problem_statement || problemRefined) {
+      lines.push(`**Problem:** ${plan.problem_statement || problemRefined}`)
       lines.push('')
     }
     if (plan.summary) {
@@ -640,11 +731,25 @@ function ExportBlock({ plan, problemRefined }) {
       lines.push('## Action Plan')
       lines.push('')
       plan.tasks.forEach((task) => {
-        lines.push(`### ${task.id ?? ''}. ${task.title ?? 'Task'}`)
+        lines.push(`### ${task.id ?? ''}. ${task.title ?? 'Phase'}`)
         lines.push(`**Owner:** ${task.owner ?? '—'} · **Timeline:** ${task.timeline ?? '—'}`)
+        if (task.agent_rationale) {
+          lines.push(`*Why: ${task.agent_rationale}*`)
+        }
         lines.push('')
         lines.push(task.description ?? '')
         lines.push('')
+        if (task.deliverable) {
+          lines.push(`**Deliverable:** ${task.deliverable}`)
+          lines.push('')
+        }
+        if (task.prompt_template) {
+          lines.push('**Prompt Template:**')
+          lines.push('```text')
+          lines.push(task.prompt_template)
+          lines.push('```')
+          lines.push('')
+        }
       })
     }
     if (plan.tech_stack?.length > 0) {
