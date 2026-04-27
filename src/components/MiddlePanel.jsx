@@ -271,7 +271,7 @@ function LandingHero({ authEmail, setAuthEmail, onSendMagicLink, authEmailSent }
       {/* How it works */}
       <div className="border-t border-border-subtle px-8 pt-12 pb-14">
         <p className="text-center text-[10px] uppercase tracking-widest text-text-dim mb-10">How it works</p>
-        <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
           {steps.map((step) => (
             <div key={step.num} className="flex flex-col items-center text-center">
               <div className="w-10 h-10 rounded-xl border border-emerald/20 flex items-center justify-center mb-4" style={{ background: 'rgb(var(--color-emerald) / 0.08)' }}>
@@ -301,7 +301,7 @@ function LandingHero({ authEmail, setAuthEmail, onSendMagicLink, authEmailSent }
       <div className="border-t border-border-subtle px-8 py-12">
         <div className="max-w-2xl mx-auto">
           <p className="text-[10px] uppercase tracking-widest text-text-dim mb-6">What's coming</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {roadmap.map((item) => (
               <div key={item} className="flex items-start gap-2.5 text-xs text-text-secondary">
                 <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded border border-emerald/20 flex items-center justify-center" style={{ background: 'rgb(var(--color-emerald) / 0.08)' }}>
@@ -316,19 +316,40 @@ function LandingHero({ authEmail, setAuthEmail, onSendMagicLink, authEmailSent }
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-border-subtle px-8 py-5 flex items-center justify-between">
-        <p className="text-text-dim text-[10px]">Built by Jeff Rodriguez · Council OS v3</p>
+      {/* Pricing Banner */}
+      <div className="border-t border-border-subtle bg-emerald/5 px-8 py-8 flex flex-col items-center text-center">
+        <p className="text-[10px] uppercase tracking-widest text-emerald mb-2">Transparent Pricing</p>
+        <h3 className="text-text-primary text-lg font-bold mb-1">First 2 sessions are free.</h3>
+        <p className="text-text-secondary text-sm mb-4">Then just $2.50 per session. No subscriptions, no hidden fees.</p>
         <button
-          onClick={() => document.getElementById('policy-inline')?.classList.toggle('hidden')}
-          className="text-text-dim text-[10px] underline hover:text-text-secondary transition-colors"
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+            document.querySelector('input[type="email"]')?.focus()
+          }}
+          className="rounded-full border border-emerald/30 bg-emerald/10 px-5 py-2 text-xs font-medium text-emerald hover:bg-emerald/20 transition-colors"
         >
-          Refund Policy
+          Start now
         </button>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-border-subtle px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p className="text-text-dim text-[10px]">Built by Jeff Rodriguez · Council OS v3</p>
+        <div className="flex flex-wrap justify-center items-center gap-4 text-[10px] text-text-dim">
+          <a href="mailto:jeff@banyan.com" className="hover:text-text-secondary transition-colors">Support</a>
+          <a href="#" className="hover:text-text-secondary transition-colors">Terms of Service</a>
+          <a href="#" className="hover:text-text-secondary transition-colors">Privacy Policy</a>
+          <button
+            onClick={() => document.getElementById('policy-inline')?.classList.toggle('hidden')}
+            className="hover:text-text-secondary transition-colors underline"
+          >
+            Refund Policy
+          </button>
+        </div>
       </div>
       <div id="policy-inline" className="hidden border-t border-border-subtle px-8 py-5">
         <p className="text-text-dim text-xs leading-relaxed max-w-2xl mx-auto">
-          <strong className="text-text-secondary">Session Credits:</strong> Credits are consumed when a session starts. If Atlas fails before meaningful output is generated, your credit is automatically restored. No partial refunds on completed sessions. Email the address from your magic link with any questions.
+          <strong className="text-text-secondary">Session Credits:</strong> Credits are consumed when a session starts. If Atlas fails before meaningful output is generated, your credit is automatically restored. No partial refunds on completed sessions. Email jeff@banyan.com with any questions.
         </p>
       </div>
     </div>

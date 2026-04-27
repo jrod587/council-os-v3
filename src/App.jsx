@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import LeftPanel from './components/LeftPanel.jsx'
 import MiddlePanel from './components/MiddlePanel.jsx'
 import RightPanel from './components/RightPanel.jsx'
+import MarketingDashboard from './components/MarketingDashboard.jsx'
 import {
   apiFetch,
   getCurrentSession,
@@ -62,6 +63,7 @@ export default function App() {
   const [viewerLoading, setViewerLoading] = useState(false)
   const [checkoutState, setCheckoutState] = useState(null)
   const [isNewUser, setIsNewUser] = useState(false)
+  const [isAdminView, setIsAdminView] = useState(false)
 
   const estimatedCostUSD = costEstimate(tokenUsage).toFixed(4)
   const budgetPercent = Math.min((costEstimate(tokenUsage) / SESSION_BUDGET_USD) * 100, 100)
@@ -168,6 +170,12 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const checkout = params.get('checkout')
+    const view = params.get('view')
+    
+    if (view === 'marketing') {
+      setIsAdminView(true)
+    }
+
     if (checkout) {
       setCheckoutState(checkout)
       params.delete('checkout')
@@ -372,6 +380,10 @@ export default function App() {
       accessGrantType: session.access_grant_type,
     })) ?? []
   ), [viewer])
+
+  if (isAdminView) {
+    return <MarketingDashboard />
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-forest-night">
