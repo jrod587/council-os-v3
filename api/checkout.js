@@ -24,12 +24,14 @@ export default async function handler(req, res) {
     const unitAmountUsd = getSessionPriceUsd()
     const creditsGranted = getPurchasedCreditsPerCheckout()
 
+    const hasExistingCustomer = Boolean(account.stripe_customer_id)
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       client_reference_id: user.id,
-      customer: account.stripe_customer_id || undefined,
-      customer_creation: account.stripe_customer_id ? undefined : 'always',
-      customer_email: user.email ?? undefined,
+      customer: hasExistingCustomer ? account.stripe_customer_id : undefined,
+      customer_creation: hasExistingCustomer ? undefined : 'always',
+      // Only pass customer_email for new customers — Stripe rejects both together
+      customer_email: hasExistingCustomer ? undefined : (user.email ?? undefined),
       success_url: `${appUrl}?checkout=success`,
       cancel_url: `${appUrl}?checkout=cancelled`,
       payment_method_types: ['card'],
