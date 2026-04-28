@@ -438,7 +438,7 @@ function BillingGate({
               disabled={isBuying}
               className="w-full rounded-xl border border-emerald/30 bg-emerald/15 px-4 py-3 text-sm font-medium text-emerald transition-colors hover:bg-emerald/25 disabled:opacity-40"
             >
-              {isBuying ? 'Opening Stripe…' : 'Buy 1 Session Credit - $7'}
+              {isBuying ? 'Opening Stripe…' : 'Buy 1 Session Credit - $2.50'}
             </button>
 
             <div className="rounded-xl border border-border-subtle bg-forest-panel p-4 space-y-3">

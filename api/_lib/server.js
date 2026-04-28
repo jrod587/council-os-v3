@@ -148,8 +148,8 @@ export async function readRawBody(req) {
 }
 
 export function getSessionPriceUsd() {
-  const parsed = Number(process.env.COUNCIL_SESSION_PRICE_USD || 7)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 7
+  const parsed = Number(process.env.COUNCIL_SESSION_PRICE_USD || 2.50)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 2.50
 }
 
 export function getFounderGrantCredits() {
